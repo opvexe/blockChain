@@ -1,9 +1,9 @@
-package model
+package main
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/binary"
+	"encoding/gob"
 	"time"
 )
 
@@ -26,28 +26,47 @@ type Block struct {
 */
 func NewBlock(pvHash, data []byte) *Block {
 	b := &Block{
-		version:    "1.0",
-		prevHash:   pvHash,
-		hash:       nil,
-		merkleRoot: nil,
-		timeStamp:  time.Now().Unix(),
-		bits:       0,
-		nonce:      0,
-		data:       data,
+		Version:    "Bitcoin 1.3.0.0",
+		PrevHash:   pvHash,
+		Hash:       nil,
+		MerkleRoot: nil,
+		TimeStamp:  time.Now().Unix(),
+		Bits:       0,
+		Nonce:      0,
+		Data:       data,
 	}
-	//	处理挖矿数据
-	by := [][]byte{
-		[]byte(b.version),
-		b.prevHash,
-		b.merkleRoot,
-		dig2Byte(b.timeStamp),
-		dig2Byte(b.bits),
-		dig2Byte(b.nonce),
-	}
-	str := bytes.Join(by, []byte(""))
-	hash := sha256.Sum256(str)
-	b.hash = hash[:]
+	//挖矿
+	pow := NewProofWork(b)
+	n,h :=pow.Run()
+	b.Nonce = n
+	b.Hash = h
 	return b
+}
+
+/*
+	编码
+*/
+func (b *Block)Serialize() []byte {
+	var buff bytes.Buffer
+	encoder := gob.NewEncoder(&buff)
+	err:=encoder.Encode(b)
+	if err!=nil {
+		return nil
+	}
+	return buff.Bytes()
+}
+
+/*
+	解码
+*/
+func Deserialize(b []byte) *Block {
+	var block Block
+	decoder := gob.NewDecoder(bytes.NewReader(b))
+	err:=decoder.Decode(block)
+	if err!=nil {
+		return nil
+	}
+	return &block
 }
 
 /*

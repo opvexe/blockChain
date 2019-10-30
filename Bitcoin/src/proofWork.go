@@ -1,12 +1,11 @@
-package model
+package main
 
 import (
 	"bytes"
 	"crypto/sha256"
-	"golang.org/x/tools/go/ssa/interp/testdata/src/fmt"
+	"fmt"
 	"math/big"
 )
-
 /*
 	工作量计算
 */
@@ -56,7 +55,7 @@ func (pow *ProofWork) Run() (int64,[]byte) {
 		h [32]byte //hash值
 	)
 	for{
-		fmt.Printf("挖矿中:%x\n",h)
+		fmt.Printf("挖矿中:%x\r",h)
 		data := pow.prepareData(n)
 		h = sha256.Sum256(data)
 		t := big.Int{}
@@ -70,4 +69,15 @@ func (pow *ProofWork) Run() (int64,[]byte) {
 		}
 	}
 	return n,h[:]
+}
+
+/*
+	校验
+*/
+func (pow *ProofWork)isValid() bool {
+	data := pow.prepareData(pow.block.Nonce)
+	hash := sha256.Sum256(data)
+	tmp := big.Int{}
+	tmp.SetBytes(hash[:])
+	return tmp.Cmp(pow.target) == -1
 }
