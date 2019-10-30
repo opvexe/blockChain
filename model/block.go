@@ -11,14 +11,14 @@ import (
 	区块
 */
 type Block struct {
-	version    string //版本号
-	prevHash   []byte //前区块哈希值
-	hash       []byte //当前哈希值
-	merkleRoot []byte //Merkle根，该区块交易的数据计算
-	timeStamp  int64  //时间戳
-	bits       int64  //难度值
-	nonce      int64  //随机数
-	data       []byte //区块体
+	Version    string //版本号
+	PrevHash   []byte //前区块哈希值
+	Hash       []byte //当前哈希值
+	MerkleRoot []byte //Merkle根，该区块交易的数据计算
+	TimeStamp  int64  //时间戳
+	Bits       int64  //难度值
+	Nonce      int64  //随机数
+	Data       []byte //区块体
 }
 
 /*
