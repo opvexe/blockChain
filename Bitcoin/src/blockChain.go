@@ -47,8 +47,9 @@ func InitBolt() (*bolt.DB, []byte) {
 			if err != nil {
 				return nil
 			}
+			coinBase := CoinBaseTX("", genesis_chain)
 			//创世
-			genesis := NewBlock(nil, []byte(genesis_chain))
+			genesis := NewBlock(nil, []*Transaction{coinBase})
 			//添加数据
 			_ = b.Put(genesis.Hash, genesis.Serialize())
 			//更新Hash值
@@ -66,9 +67,9 @@ func InitBolt() (*bolt.DB, []byte) {
 /*
 	添加区块链
 */
-func (bc *BlockChain) Add(data []byte) {
+func (bc *BlockChain) Add(txs []*Transaction) {
 	last := bc.tail
-	block := NewBlock(last, []byte(data))
+	block := NewBlock(last, txs)
 	_ = bc.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket_name))
 		if b == nil {
@@ -79,4 +80,21 @@ func (bc *BlockChain) Add(data []byte) {
 		bc.tail = block.Hash
 		return nil
 	})
+}
+
+/*
+	UTXO
+*/
+func (bc *BlockChain)FindUTXO(data string) []TXOutPut {
+	var outputs []TXOutPut
+	spentMap :=make(map[string]int64)
+	it :=NewIterator(bc)	//遍历区块链
+	for{
+		block :=it.Next()
+		for _,tx :=range block.Transactions{	//遍历交易
+			for outPutIndex,outPut :=range tx.TXOutPuts{	//遍历outputs
+
+			}
+		}
+	}
 }
