@@ -85,16 +85,39 @@ func (bc *BlockChain) Add(txs []*Transaction) {
 /*
 	UTXO
 */
-func (bc *BlockChain)FindUTXO(data string) []TXOutPut {
+func (bc *BlockChain) FindUTXO(data string) []TXOutPut {
 	var outputs []TXOutPut
-	spentMap :=make(map[string]int64)
-	it :=NewIterator(bc)	//遍历区块链
-	for{
-		block :=it.Next()
-		for _,tx :=range block.Transactions{	//遍历交易
-			for outPutIndex,outPut :=range tx.TXOutPuts{	//遍历outputs
+	spentMap := make(map[string][]int64)
+	it := NewIterator(bc) //遍历区块链
+	for {
+		block := it.Next()
+		for _, tx := range block.Transactions { //遍历交易
+		LABEL:
+			for outPutIndex, outPut := range tx.TXOutPuts { //遍历outputs
+				if outPut.LockScript == data {
+					currTxid := string(tx.Txid)
+					indexArr := spentMap[currTxid]
+					if len(indexArr) != 0 {
+						for _, v := range indexArr {
+							if v == int64(outPutIndex) {
+								continue LABEL
+							}
+						}
+					}
+					outputs = append(outputs, outPut)
+				}
+			}
 
+			for _, input := range tx.TXInPuts {
+				if input.ScriptSig == data {
+					spentKey := string(input.TXID)
+					spentMap[spentKey] = append(spentMap[spentKey], input.Index)
+				}
 			}
 		}
+		if block.PrevHash == nil {
+			break
+		}
 	}
+	return outputs
 }
