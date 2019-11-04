@@ -47,7 +47,7 @@ func InitBolt() (*bolt.DB, []byte) {
 			if err != nil {
 				return nil
 			}
-			coinBase := CoinBaseTX("", genesis_chain)
+			coinBase := CoinBaseTX("中本聪", genesis_chain)
 			//创世
 			genesis := NewBlock(nil, []*Transaction{coinBase})
 			//添加数据
@@ -83,10 +83,19 @@ func (bc *BlockChain) Add(txs []*Transaction) {
 }
 
 /*
+	未消费详情
+*/
+type UTXOInfo struct {
+	output TXOutPut
+	intdex int64
+	txid   []byte
+}
+
+/*
 	UTXO
 */
-func (bc *BlockChain) FindUTXO(data string) []TXOutPut {
-	var outputs []TXOutPut
+func (bc *BlockChain) FindUTXO(data string) []UTXOInfo {
+	var outputs []UTXOInfo
 	spentMap := make(map[string][]int64)
 	it := NewIterator(bc) //遍历区块链
 	for {
@@ -104,7 +113,12 @@ func (bc *BlockChain) FindUTXO(data string) []TXOutPut {
 							}
 						}
 					}
-					outputs = append(outputs, outPut)
+					txoInfo := UTXOInfo{
+						output: outPut,
+						intdex: int64(outPutIndex),
+						txid:   tx.Txid,
+					}
+					outputs = append(outputs, txoInfo)
 				}
 			}
 
@@ -120,4 +134,21 @@ func (bc *BlockChain) FindUTXO(data string) []TXOutPut {
 		}
 	}
 	return outputs
+}
+
+/*
+	遍历账本，寻找所有的UTXOINFO
+*/
+func (bc *BlockChain)FindNeedUTXO(data string,amount float64) ([]UTXOInfo, float64) {
+	txos := bc.FindUTXO(data)
+	var sm float64
+	var utxos []UTXOInfo
+	for _,txo := range txos{
+		sm += txo.output.Value
+		utxos = append(utxos, txo)
+		if sm >= amount{
+			break
+		}
+	}
+	return utxos,sm
 }

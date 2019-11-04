@@ -49,7 +49,7 @@ func (c *Cmd) Run() {
 	添加
 */
 func (c *Cmd) add(d string) {
-	c.bc.Add([]byte(d))
+	//c.bc.Add([]byte(d))
 }
 
 /*

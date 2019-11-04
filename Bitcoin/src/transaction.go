@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/gob"
+	"errors"
 	"time"
 )
 
@@ -79,4 +80,17 @@ func (tx *Transaction) SetTXID() {
 	}
 	hash := sha256.Sum256(buff.Bytes())
 	tx.Txid = hash[:]
+}
+
+/*
+	普通交易
+*/
+func NewTransaction(from ,to string,amount float64,bc *BlockChain) (*Transaction,error) {
+	uxos,value:=bc.FindNeedUTXO(from,amount)	//找到付款人能被合理支配的钱
+	if value<amount {
+		return nil,errors.New("金额不足")
+	}
+
+	//拼接交易
+
 }
