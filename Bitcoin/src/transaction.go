@@ -99,7 +99,7 @@ func NewTransaction(from, to string, amount float64, bc *BlockChain) (*Transacti
 			TXID:      utx.txid,
 			Index:     utx.intdex,
 			ScriptSig: nil,
-			Public:nil,
+			Public:publicKey,
 		}
 		inputs = append(inputs, input)
 	}

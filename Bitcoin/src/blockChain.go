@@ -23,49 +23,35 @@ type BlockChain struct {
 	初始化
 */
 func NewBlockChain() *BlockChain {
-	db, hash := InitBolt()
-	if db == nil {
-		return nil
-	}
-	return &BlockChain{
-		db:   db,
-		tail: hash,
-	}
-}
-
-/*
-	创建数据库，如果存在则不创建。
-*/
-func InitBolt() (*bolt.DB, []byte) {
-	var hash []byte
+	var lastHash []byte
 	db, err := bolt.Open(db_name, 0600, nil)
 	if err != nil {
-		return nil, nil
+		return nil
 	}
-	//事务
-	_ = db.Update(func(tx *bolt.Tx) error {
+	_=db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket_name))
 		if b == nil {
-			//创建数据库
 			b, err = tx.CreateBucket([]byte(bucket_name))
 			if err != nil {
 				return nil
 			}
-			coinBase := CoinBaseTX("19qyxmoAxYqk76CfPZotXkVkvdnpsHiGFb", genesis_chain)
-			//创世
-			genesis := NewBlock(nil, []*Transaction{coinBase})
+			coinBaseTx := CoinBaseTX("19qyxmoAxYqk76CfPZotXkVkvdnpsHiGFb", genesis_chain)
+			genesis := NewBlock(nil, []*Transaction{coinBaseTx})
 			//添加数据
 			_ = b.Put(genesis.Hash, genesis.Serialize())
-			//更新Hash值
+			//更新最后一个hash值
 			_ = b.Put([]byte(last_Hashkey), genesis.Hash)
-			//获取hash
-			hash = genesis.Hash
+			lastHash = genesis.Hash
 		} else {
-			hash = b.Get([]byte(last_Hashkey))
+			lastHash = b.Get([]byte(last_Hashkey))
 		}
 		return nil
 	})
-	return db, hash
+
+	return &BlockChain{
+		db:   db,
+		tail: lastHash,
+	}
 }
 
 /*
@@ -125,7 +111,7 @@ func (bc *BlockChain) FindUTXO(publicHash []byte) []UTXOInfo {
 						intdex: int64(outPutIndex),
 						txid:   tx.Txid,
 					}
-					fmt.Printf("OutPut:%x,Index:%d,Value:%d\n",publicHash,outPutIndex,outPut.Value)
+					fmt.Printf("OutPut:%x,Index:%d,Value:%f\n",publicHash,outPutIndex,outPut.Value)
 					outputs = append(outputs, txoInfo)
 				}
 			}

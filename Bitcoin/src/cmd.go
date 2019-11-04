@@ -9,8 +9,7 @@ import (
 /*
 	使用说明描述
 */
-const DesUse = `	
-	./bc add <data>  "区块数据"
+const DesUse = `
 	./bc print       "打印区块"
 	./bc balance [from]	 "总金额"
 	./bc send [from] [to] [amount] [minner] [data] "转账给某人"
@@ -39,12 +38,6 @@ func (c *Cmd) Run() {
 		return
 	}
 	switch cmd[1] {
-	case "add":
-		if len(cmd) != 3 {
-			fmt.Println(DesUse)
-			return
-		}
-		c.add(cmd[2])
 	case "send":
 		if len(cmd) != 7 {
 			fmt.Println("cmd 参数无效!")
@@ -75,13 +68,6 @@ func (c *Cmd) Run() {
 }
 
 /*
-	添加
-*/
-func (c *Cmd) add(d string) {
-	//c.bc.Add([]byte(d))
-}
-
-/*
 	获取总额
 */
 func (c *Cmd) getBalance(address string) {
@@ -106,11 +92,11 @@ func (c *Cmd) print() {
 		fmt.Println("Version:", v.Version)
 		fmt.Printf("PreHash:%x\n", v.PrevHash)
 		fmt.Printf("Hash:%x\n", v.Hash)
-		fmt.Println("MerkleRoot:", string(v.MerkleRoot))
+		fmt.Printf("MerkleRoot:%x\n", v.MerkleRoot)
 		fmt.Println("TimeStamp:", v.TimeStamp)
 		fmt.Println("Bits:", v.Bits)
 		fmt.Println("Nonce:", v.Nonce)
-		fmt.Println("Data:", v.Transactions[0].TXInPuts[0].ScriptSig)
+		fmt.Println("Data:", string(v.Transactions[0].TXInPuts[0].ScriptSig))
 		pow := NewProofWork(v)
 		fmt.Printf("校验工作量:%v\n", pow.isValid())
 		if v.PrevHash == nil {

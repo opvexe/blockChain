@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/gob"
+	"fmt"
 	"time"
 )
 
@@ -28,19 +30,29 @@ func NewBlock(pvHash []byte, txs []*Transaction) *Block {
 	b := &Block{
 		Version:      "Bitcoin 1.3.0.0",
 		PrevHash:     pvHash,
-		Hash:         nil,
 		MerkleRoot:   nil,
 		TimeStamp:    time.Now().Unix(),
 		Bits:         0,
-		Nonce:        0,
 		Transactions: txs,
 	}
+	b.HashMerklRoot()
 	//挖矿
 	pow := NewProofWork(b)
 	n, h := pow.Run()
 	b.Nonce = n
 	b.Hash = h
 	return b
+}
+/*
+	计算梅克尔根
+ */
+func (b *Block)HashMerklRoot()  {
+	var info []byte
+	for _,tx := range b.Transactions{
+		info = append(info, tx.Txid...)
+	}
+	hash :=sha256.Sum256(info)
+	b.MerkleRoot = hash[:]
 }
 
 /*
@@ -51,6 +63,7 @@ func (b *Block) Serialize() []byte {
 	encoder := gob.NewEncoder(&buff)
 	err := encoder.Encode(b)
 	if err != nil {
+		fmt.Println("Serialize Encode",err)
 		return nil
 	}
 	return buff.Bytes()
@@ -62,8 +75,9 @@ func (b *Block) Serialize() []byte {
 func Deserialize(b []byte) *Block {
 	var block Block
 	decoder := gob.NewDecoder(bytes.NewReader(b))
-	err := decoder.Decode(block)
+	err := decoder.Decode(&block)
 	if err != nil {
+		fmt.Println("Deserialize Decode",err)
 		return nil
 	}
 	return &block

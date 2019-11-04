@@ -1,6 +1,9 @@
 package main
 
-import "github.com/boltdb/bolt"
+import (
+	"github.com/boltdb/bolt"
+	"log"
+)
 
 /*
 	迭代器
@@ -24,15 +27,14 @@ func NewIterator(bc *BlockChain) *Iterator {
 	游标
 */
 func (it *Iterator) Next() *Block {
-	var block *Block
-	_ = it.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucket_name))
+	var block  *Block
+	_=it.db.View(func(tx *bolt.Tx) error {
+		b :=tx.Bucket([]byte(bucket_name))
 		if b == nil {
-			return nil
+			log.Fatal("Bucket 不能为nil")
 		}
-		bi := b.Get([]byte(it.curHash))
-		block := Deserialize(bi)
-		//游标前移
+		blockInfo :=b.Get([]byte(it.curHash))
+		block =Deserialize(blockInfo)
 		it.curHash = block.PrevHash
 		return nil
 	})
