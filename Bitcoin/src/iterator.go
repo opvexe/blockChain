@@ -6,7 +6,7 @@ import "github.com/boltdb/bolt"
 	迭代器
 */
 type Iterator struct {
-	db *bolt.DB
+	db      *bolt.DB
 	curHash []byte
 }
 
@@ -23,15 +23,15 @@ func NewIterator(bc *BlockChain) *Iterator {
 /*
 	游标
 */
-func (it *Iterator)Next() *Block {
+func (it *Iterator) Next() *Block {
 	var block *Block
-	_ =it.db.View(func(tx *bolt.Tx) error {
-		b :=tx.Bucket([]byte(bucket_name))
-		if b== nil {
+	_ = it.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucket_name))
+		if b == nil {
 			return nil
 		}
-		bi :=b.Get(it.curHash)
-		block :=Deserialize(bi)
+		bi := b.Get(it.curHash)
+		block := Deserialize(bi)
 		//游标前移
 		it.curHash = block.PrevHash
 		return nil

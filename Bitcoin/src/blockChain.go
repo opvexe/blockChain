@@ -1,6 +1,10 @@
 package main
 
-import "github.com/boltdb/bolt"
+import (
+	"bytes"
+	"fmt"
+	"github.com/boltdb/bolt"
+)
 
 const genesis_chain = "I'm Nakamoto. This is my first creative chain" //创世语
 const db_name = "BlockChain.db"                                       //数据库名
@@ -47,7 +51,7 @@ func InitBolt() (*bolt.DB, []byte) {
 			if err != nil {
 				return nil
 			}
-			coinBase := CoinBaseTX("中本聪", genesis_chain)
+			coinBase := CoinBaseTX("19qyxmoAxYqk76CfPZotXkVkvdnpsHiGFb", genesis_chain)
 			//创世
 			genesis := NewBlock(nil, []*Transaction{coinBase})
 			//添加数据
@@ -94,16 +98,19 @@ type UTXOInfo struct {
 /*
 	UTXO
 */
-func (bc *BlockChain) FindUTXO(data string) []UTXOInfo {
+func (bc *BlockChain) FindUTXO(publicHash []byte) []UTXOInfo {
 	var outputs []UTXOInfo
 	spentMap := make(map[string][]int64)
-	it := NewIterator(bc) //遍历区块链
+	//1.遍历区块链
+	it := NewIterator(bc)
 	for {
 		block := it.Next()
-		for _, tx := range block.Transactions { //遍历交易
+		//2.遍历交易
+		for _, tx := range block.Transactions {
 		LABEL:
-			for outPutIndex, outPut := range tx.TXOutPuts { //遍历outputs
-				if outPut.LockScript == data {
+			//3.遍历outputs
+			for outPutIndex, outPut := range tx.TXOutPuts {
+				if bytes.Equal(outPut.PublicHash, publicHash) {
 					currTxid := string(tx.Txid)
 					indexArr := spentMap[currTxid]
 					if len(indexArr) != 0 {
@@ -118,14 +125,18 @@ func (bc *BlockChain) FindUTXO(data string) []UTXOInfo {
 						intdex: int64(outPutIndex),
 						txid:   tx.Txid,
 					}
+					fmt.Printf("OutPut:%x,Index:%d,Value:%d\n",publicHash,outPutIndex,outPut.Value)
 					outputs = append(outputs, txoInfo)
 				}
 			}
-
-			for _, input := range tx.TXInPuts {
-				if input.ScriptSig == data {
-					spentKey := string(input.TXID)
-					spentMap[spentKey] = append(spentMap[spentKey], input.Index)
+			//4.如果不是挖矿交易
+			if !tx.isCoinBaseTx() {
+				for _, input := range tx.TXInPuts {
+					pkHash := getPublicKeySignFromPublic(publicHash)
+					if bytes.Equal(input.Public, pkHash) {
+						spentKey := string(input.TXID)
+						spentMap[spentKey] = append(spentMap[spentKey], input.Index)
+					}
 				}
 			}
 		}
@@ -137,18 +148,18 @@ func (bc *BlockChain) FindUTXO(data string) []UTXOInfo {
 }
 
 /*
-	遍历账本，寻找所有的UTXOINFO
+	遍历账本，返回可以支配的钱
 */
-func (bc *BlockChain)FindNeedUTXO(data string,amount float64) ([]UTXOInfo, float64) {
-	txos := bc.FindUTXO(data)
+func (bc *BlockChain) FindNeedUTXO(publicHash []byte, amount float64) ([]UTXOInfo, float64) {
+	txos := bc.FindUTXO(publicHash)
 	var sm float64
 	var utxos []UTXOInfo
-	for _,txo := range txos{
+	for _, txo := range txos {
 		sm += txo.output.Value
 		utxos = append(utxos, txo)
-		if sm >= amount{
+		if sm >= amount {
 			break
 		}
 	}
-	return utxos,sm
+	return utxos, sm
 }

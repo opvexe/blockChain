@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 )
+
 /*
 	工作量计算
 */
@@ -49,32 +50,32 @@ func (pow *ProofWork) prepareData(n int64) []byte {
 /*
 	开始挖矿
 */
-func (pow *ProofWork) Run() (int64,[]byte) {
+func (pow *ProofWork) Run() (int64, []byte) {
 	var (
 		n int64    //随机数
 		h [32]byte //hash值
 	)
-	for{
-		fmt.Printf("挖矿中:%x\r",h)
+	for {
+		fmt.Printf("挖矿中:%x\r", h)
 		data := pow.prepareData(n)
 		h = sha256.Sum256(data)
 		t := big.Int{}
 		t.SetBytes(h[:])
 		//比较
 		if t.Cmp(pow.target) == -1 {
-			fmt.Printf("挖矿成功:%x,随机数:%d\n",h,n)
+			fmt.Printf("挖矿成功:%x,随机数:%d\n", h, n)
 			break
-		}else {
+		} else {
 			n++
 		}
 	}
-	return n,h[:]
+	return n, h[:]
 }
 
 /*
 	校验
 */
-func (pow *ProofWork)isValid() bool {
+func (pow *ProofWork) isValid() bool {
 	data := pow.prepareData(pow.block.Nonce)
 	hash := sha256.Sum256(data)
 	tmp := big.Int{}
