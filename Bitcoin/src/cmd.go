@@ -46,17 +46,17 @@ func (c *Cmd) Run() {
 		}
 		c.add(cmd[2])
 	case "send":
-		if len(cmd)!= 7{
+		if len(cmd) != 7 {
 			fmt.Println("cmd 参数无效!")
 			return
 		}
-		from :=cmd[2]
-		to :=cmd[3]
-		amountStr :=cmd[4]
-		amount,_:=strconv.ParseFloat(amountStr,64)
-		minner :=cmd[5]
-		data :=cmd[6]
-		c.send(from,to,minner,data,amount)
+		from := cmd[2]
+		to := cmd[3]
+		amountStr := cmd[4]
+		amount, _ := strconv.ParseFloat(amountStr, 64)
+		minner := cmd[5]
+		data := cmd[6]
+		c.send(from, to, minner, data, amount)
 	case "print":
 		c.print()
 	case "balance":
@@ -83,17 +83,17 @@ func (c *Cmd) add(d string) {
 
 /*
 	获取总额
- */
-func (c *Cmd)getBalance(address string)  {
+*/
+func (c *Cmd) getBalance(address string) {
 	//1.根据地址获取公钥哈希
 	publicHash := getPublicKeySignFromAddress(address)
 	//2.获取未使用的钱
-	utxo:=c.bc.FindUTXO(publicHash)
+	utxo := c.bc.FindUTXO(publicHash)
 	var t float64
-	for _,txo := range utxo{
+	for _, txo := range utxo {
 		t += txo.output.Value
 	}
-	fmt.Printf("%x总金额%f\n",publicHash,t)
+	fmt.Printf("%x总金额%f\n", publicHash, t)
 }
 
 /*
@@ -123,47 +123,47 @@ func (c *Cmd) print() {
 
 /*
 	打印所有地址
- */
-func (c *Cmd)listAddress()  {
-	wm :=NewWalletManager()
-	if wm ==nil {
+*/
+func (c *Cmd) listAddress() {
+	wm := NewWalletManager()
+	if wm == nil {
 		return
 	}
-	for _,value := range wm.listAddress(){
-		fmt.Println("address",value)
+	for _, value := range wm.listAddress() {
+		fmt.Println("address", value)
 	}
 }
 
 /*
 	创建钱包
- */
-func (c *Cmd)createWallet()  {
+*/
+func (c *Cmd) createWallet() {
 	wm := NewWalletManager()
 	if wm == nil {
 		return
 	}
-	address ,err:= wm.CreateWallet()
-	if err!=nil {
+	address, err := wm.CreateWallet()
+	if err != nil {
 		return
 	}
-	fmt.Println("钱包地址:",address)
+	fmt.Println("钱包地址:", address)
 }
 
 /*
 	转账
- */
-func (c *Cmd)send(from,to,minner,data string,amount float64)  {
-	fmt.Printf("%x转账给%x金额%f,挖矿人:%x,矿石语:%s\n",from,to,amount,minner,data)
+*/
+func (c *Cmd) send(from, to, minner, data string, amount float64) {
+	fmt.Printf("%x转账给%x金额%f,挖矿人:%x,矿石语:%s\n", from, to, amount, minner, data)
 	//1.创建挖矿交易
-	coin :=CoinBaseTX(minner,data)
+	coin := CoinBaseTX(minner, data)
 	//2.创建交易
-	txs :=[]*Transaction{coin}
+	txs := []*Transaction{coin}
 	//3.创建普通交易
-	otx,err := NewTransaction(from,to,amount,c.bc)
-	if err!=nil {
-		fmt.Println("cmd send NewTransaction:",err)
+	otx, err := NewTransaction(from, to, amount, c.bc)
+	if err != nil {
+		fmt.Println("cmd send NewTransaction:", err)
 		return
-	}else {
+	} else {
 		txs = append(txs, otx)
 	}
 	//添加到区块链上

@@ -80,7 +80,7 @@ func (wm *WalletManager) SaveToFile() error {
 func (wm *WalletManager) LoadFileName() error {
 	//1.判断文件是否存在
 	if !isFileExits(FileName) {
-		fmt.Println("WalletManager SaveToFile 不存在")
+		fmt.Println("WalletManager LoadFileName 不存在")
 		return nil
 	}
 	//2.读取文件
@@ -105,7 +105,7 @@ func (wm *WalletManager) LoadFileName() error {
 */
 func isFileExits(fileName string) bool {
 	_, err := os.Stat(fileName)
-	if !os.IsNotExist(err) {
+	if os.IsNotExist(err) {
 		return false
 	}
 	return true

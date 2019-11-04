@@ -23,7 +23,7 @@ func NewProofWork(block *Block) *ProofWork {
 		block: block,
 	}
 	//系统自动调节获取一个难度的哈希值
-	targetStr := "0000100000000000000000000000000000000000000000000000000000000000"
+	targetStr := "0010000000000000000000000000000000000000000000000000000000000000"
 	bigTmp := big.Int{}
 	bigTmp.SetString(targetStr, 16)
 	pow.target = &bigTmp
