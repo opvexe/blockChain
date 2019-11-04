@@ -30,7 +30,7 @@ func (it *Iterator) Next() *Block {
 		if b == nil {
 			return nil
 		}
-		bi := b.Get(it.curHash)
+		bi := b.Get([]byte(it.curHash))
 		block := Deserialize(bi)
 		//游标前移
 		it.curHash = block.PrevHash

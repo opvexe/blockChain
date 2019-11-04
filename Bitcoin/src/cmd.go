@@ -130,7 +130,7 @@ func (c *Cmd) listAddress() {
 		return
 	}
 	for _, value := range wm.listAddress() {
-		fmt.Println("address", value)
+		fmt.Println("address:", value)
 	}
 }
 
