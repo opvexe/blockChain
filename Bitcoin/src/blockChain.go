@@ -59,8 +59,17 @@ func NewBlockChain() *BlockChain {
 	添加区块链
 */
 func (bc *BlockChain) Add(txs []*Transaction) {
+	var validTxs []*Transaction
+	for _,tx := range txs{
+		if bc.VerifyTransaction(tx) {
+			validTxs = append(validTxs,tx)
+		}else {
+			fmt.Printf("签名校验失败的交易:%x\n", tx.Txid)
+		}
+	}
+
 	last := bc.tail
-	block := NewBlock(last, txs)
+	block := NewBlock(last, validTxs)
 	_ = bc.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket_name))
 		if b == nil {
