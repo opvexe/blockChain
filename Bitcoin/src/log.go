@@ -1,4 +1,4 @@
-package log
+package main
 /*
 	go日志框架zap配置
 */

@@ -2,10 +2,15 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"math/big"
+	"strings"
 	"time"
 )
 
@@ -122,6 +127,116 @@ func NewTransaction(from, to string, amount float64, bc *BlockChain) (*Transacti
 }
 
 /*
+	拷贝副本
+ */
+func (tx *Transaction)TrimmedTransactionCopy() *Transaction {
+	var inputs []TXInPut
+	var outputs []TXOutPut
+	for _,input := range tx.TXInPuts{
+		inputNew := TXInPut{
+			TXID:      input.TXID,
+			Index:     input.Index,
+			ScriptSig: nil,
+			Public:    nil,
+		}
+		inputs = append(inputs, inputNew)
+	}
+	copy(outputs,tx.TXOutPuts)
+	txCopy := &Transaction{
+		Txid:      nil,
+		TXInPuts:  inputs,
+		TXOutPuts: outputs,
+		TimeStamp: tx.TimeStamp,
+	}
+	return txCopy
+}
+/*
+	签名
+ */
+func (tx *Transaction)Sign(privateKey *ecdsa.PrivateKey,prevTx map[string]*Transaction) bool {
+	fmt.Println("开始签名:Sign...")
+	//1.获取交易副本
+	txCopy := tx.TrimmedTransactionCopy()
+	//2.遍历副本
+	for i,input := range txCopy.TXInPuts{
+		prevtx :=prevTx[string(input.TXID)]
+		if prevtx == nil {
+			return false
+		}
+		output :=prevtx.TXOutPuts[input.Index]
+		txCopy.TXInPuts[i].Public = output.PublicHash
+		txCopy.SetTxid()
+		//3.对当前交易做哈希处理，得到需要签名的数据
+		hashData := txCopy.Txid
+		fmt.Printf(">>>>>签名内容:%x\n",hashData)
+		//5.使用私钥进行签名
+		r,s,err:=ecdsa.Sign(rand.Reader,privateKey,hashData[:])
+		if err!=nil {
+			return false
+		}
+		//6.将签名赋值给原始交易
+		signature := append(r.Bytes(),s.Bytes()...)
+		tx.TXInPuts[i].ScriptSig = signature
+		//7.将当前的input的public字段设置成nil
+		txCopy.TXInPuts[i].Public = nil
+		txCopy.Txid = nil
+	}
+	fmt.Println("交易签名成功")
+	return true
+}
+
+/*
+	验证
+ */
+func (tx *Transaction)Verify(prevTx map[string]*Transaction) bool {
+	fmt.Println("开始验证:Verify...")
+	//1.生成副本
+	txCopy := tx.TrimmedTransactionCopy()
+	//2.遍历副本
+	for i,input := range txCopy.TXInPuts{
+		prevtx := prevTx[string(input.TXID)]
+		if prevtx == nil {
+			return false
+		}
+		//2.对交易做哈希处理
+		output :=prevtx.TXOutPuts[input.Index]
+		txCopy.TXInPuts[i].Public = output.PublicHash
+		txCopy.SetTxid()
+		//3.使用签名，公钥，数据，进行校验
+		hashData := txCopy.Txid //数据
+		signData :=tx.TXInPuts[i].ScriptSig
+		publicKey :=tx.TXInPuts[i].Public
+
+		fmt.Printf("===>>>> 校验哈希:%x\n",hashData)
+
+		//还原签名,r,s
+		var r,s big.Int
+		r.SetBytes(signData[:len(signData)/2])
+		s.SetBytes(signData[len(signData)/2:])
+
+		//还原公钥
+		var x,y big.Int
+		x.SetBytes(publicKey[:len(publicKey)/2])
+		y.SetBytes(publicKey[len(publicKey)/2:])
+
+		publicRaw := ecdsa.PublicKey{
+			Curve: elliptic.P256(),
+			X:     &x,
+			Y:     &y,
+		}
+		//验证
+		if !ecdsa.Verify(&publicRaw,hashData[:],&r,&s) {
+			fmt.Println("==>>>校验失败")
+			return false
+		}
+		txCopy.Txid = nil
+		txCopy.TXInPuts[i].Public = nil
+	}
+	fmt.Println("校验成功")
+	return true
+}
+
+/*
 	创建output
  */
 func NewTxOutPut(address string,amount float64) TXOutPut {
@@ -158,4 +273,30 @@ func (tx *Transaction) isCoinBaseTx() bool {
 		return true
 	}
 	return false
+}
+
+/*
+	打印
+ */
+func (tx *Transaction)String() string {
+	var lines []string
+
+	lines = append(lines, fmt.Sprintf("--- Transaction %x:", tx.Txid))
+
+	for i, input := range tx.TXInPuts {
+
+		lines = append(lines, fmt.Sprintf("     Input %d:", i))
+		lines = append(lines, fmt.Sprintf("       TXID:      %x", input.TXID))
+		lines = append(lines, fmt.Sprintf("       Out:       %d", input.Index))
+		lines = append(lines, fmt.Sprintf("       Signature: %x", input.ScriptSig))
+		lines = append(lines, fmt.Sprintf("       PubKey:    %x", input.Public))
+	}
+
+	for i, output := range tx.TXOutPuts{
+		lines = append(lines, fmt.Sprintf("     Output %d:", i))
+		lines = append(lines, fmt.Sprintf("       Value:  %f", output.Value))
+		lines = append(lines, fmt.Sprintf("       Script: %x", output.PublicHash))
+	}
+
+	return strings.Join(lines, "\n")
 }

@@ -71,6 +71,11 @@ func (c *Cmd) Run() {
 	获取总额
 */
 func (c *Cmd) getBalance(address string) {
+
+	if !isAvailAddress(address) {
+		return
+	}
+
 	//1.根据地址获取公钥哈希
 	publicHash := getPublicKeySignFromAddress(address)
 	//2.获取未使用的钱
@@ -140,6 +145,19 @@ func (c *Cmd) createWallet() {
 */
 func (c *Cmd) send(from, to, minner, data string, amount float64) {
 	fmt.Printf("%x转账给%x金额%f,挖矿人:%x,矿石语:%s\n", from, to, amount, minner, data)
+
+	if !isAvailAddress(from) {
+		return
+	}
+
+	if !isAvailAddress(to) {
+		return
+	}
+
+	if !isAvailAddress(minner) {
+		return
+	}
+
 	//1.创建挖矿交易
 	coin := CoinBaseTX(minner, data)
 	//2.创建交易

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"fmt"
 	"github.com/boltdb/bolt"
 )
@@ -148,4 +149,66 @@ func (bc *BlockChain) FindNeedUTXO(publicHash []byte, amount float64) ([]UTXOInf
 		}
 	}
 	return utxos, sm
+}
+
+/*
+	签名
+ */
+func (bc *BlockChain)SignTransaction(privateKey *ecdsa.PrivateKey,tx *Transaction) bool {
+	fmt.Println("签名:SignTransaction...")
+	if tx.isCoinBaseTx() {
+		fmt.Println("发现挖矿交易，不需要签名")
+		return true
+	}
+	//1.查到tx所引用的交易的集合
+	prevTx := make(map[string]*Transaction)
+	//2.遍历
+	for _,input := range tx.TXInPuts{
+		tx := bc.FindTransactionByTxid(input.TXID)
+		if tx == nil {
+			return false
+		}
+		//将交易放到集合
+		fmt.Printf("签名交易：txid: %x\n", tx.Txid)
+		prevTx[string(input.TXID)] = tx
+	}
+	return tx.Sign(privateKey,prevTx)
+}
+
+/*
+	验证
+ */
+func (bc *BlockChain)VerifyTransaction(tx *Transaction) bool {
+	fmt.Println("校验：VerifyTransaction")
+	if tx.isCoinBaseTx() {
+		return true
+	}
+	prevtx := make(map[string]*Transaction)
+	for _,input := range tx.TXInPuts{
+		tx := bc.FindTransactionByTxid(input.TXID)
+		if tx ==nil {
+			return false
+		}
+		prevtx[string(input.TXID)] = tx
+	}
+	return tx.Verify(prevtx)
+}
+
+/*
+	根据id找到交易本身
+ */
+func (bc *BlockChain)FindTransactionByTxid(TXid []byte) *Transaction {
+	it := NewIterator(bc)
+	for {
+		block :=it.Next()
+		for _,tx := range block.Transactions{
+			if bytes.Equal(tx.Txid,TXid) {
+				return tx
+			}
+		}
+		if block.PrevHash == nil {
+			break
+		}
+	}
+	return nil
 }
