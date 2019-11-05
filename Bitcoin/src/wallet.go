@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -91,4 +92,21 @@ func chekSum(payload []byte) []byte {
 	hash2 := sha256.Sum256(hash1[:])
 	checksum := hash2[:4]
 	return checksum
+}
+/*
+	校验地址的有效性
+ */
+func isAvailAddress(address string) bool {
+	//1.对传入的地址base58解密
+	decoderInfo := base58.Decode(address)
+	//2.校验
+	if len(decoderInfo)!=25 {
+		fmt.Println("==>>>>地址无效:isAvailAddress")
+		return false
+	}
+	checksum1 := chekSum(decoderInfo[:payloadLen-checkSumLen])
+	checksum2:=decoderInfo[payloadLen-checkSumLen:]
+	fmt.Printf("checksum1:%x\n",checksum1)
+	fmt.Printf("checksum2:%x\n",checksum2)
+	return bytes.Equal(checksum1,checksum2)
 }
